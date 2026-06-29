@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEGE Management Tracker</title>
+<link rel="icon" href="https://portal.togohealth.com/TogoHealthLogo.png">
+<style>
+  :root {
+    --bg:#f9fafb; --card:#fff; --border:#e5e7eb; --text:#111827; --text-muted:#6b7280;
+    --blue:#3b82f6; --blue-light:#eff6ff; --green:#10b981; --green-light:#ecfdf5;
+    --purple:#8b5cf6; --purple-light:#f5f3ff; --amber:#f59e0b; --amber-light:#fffbeb;
+    --red:#ef4444; --red-light:#fef2f2; --gray:#9ca3af;
+    --radius:8px; --shadow:0 1px 3px rgba(0,0,0,.08);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); font-size:14px; }
+  a { color:inherit; text-decoration:none; }
+
+  /* ── Header ── */
+  .header { background:var(--card); border-bottom:1px solid var(--border); padding:16px 24px; display:flex; align-items:center; justify-content:space-between; }
+  .header-left { display:flex; align-items:center; gap:12px; }
+  .header-logo { width:32px; height:32px; border-radius:6px; }
+  .header h1 { font-size:18px; font-weight:700; }
+  .header-sub { font-size:12px; color:var(--text-muted); margin-top:1px; }
+  .header-right { display:flex; align-items:center; gap:10px; }
+
+  /* ── Auth ── */
+  #auth-screen { max-width:420px; margin:80px auto; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:32px; text-align:center; }
+  #auth-screen h2 { font-size:20px; font-weight:700; margin-bottom:8px; }
+  #auth-screen p { color:var(--text-muted); font-size:13px; margin-bottom:20px; }
+  #pat-input { width:100%; border:1px solid var(--border); border-radius:6px; padding:10px 12px; font-size:14px; margin-bottom:12px; }
+
+  /* ── Main ── */
+  .main { max-width:1280px; margin:0 auto; padding:24px 20px; }
+
+  /* ── Stat cards ── */
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:24px; }
+  .stat-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+  .stat-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); margin-bottom:4px; }
+  .stat-val { font-size:28px; font-weight:700; }
+  .stat-sub { font-size:11px; color:var(--text-muted); margin-top:2px; }
+  .stat-blue .stat-val { color:var(--blue); }
+  .stat-green .stat-val { color:var(--green); }
+  .stat-purple .stat-val { color:var(--purple); }
+  .stat-amber .stat-val { color:var(--amber); }
+
+  /* ── Sections ── */
+  .section { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:16px; overflow:hidden; }
+  .section-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; cursor:pointer; user-select:none; border-bottom:1px solid var(--border); }
+  .section-header:hover { background:#fafafa; }
+  .section-title { display:flex; align-items:center; gap:10px; font-weight:700; font-size:15px; }
+  .section-badge { font-size:11px; padding:2px 8px; border-radius:20px; font-weight:600; }
+  .badge-business { background:var(--blue-light); color:var(--blue); }
+  .badge-facility { background:var(--green-light); color:var(--green); }
+  .badge-provider { background:var(--purple-light); color:var(--purple); }
+  .badge-done { background:var(--green-light); color:var(--green); }
+  .section-meta { font-size:12px; color:var(--text-muted); display:flex; gap:16px; align-items:center; }
+  .section-chevron { font-size:12px; color:var(--text-muted); transition:.2s; }
+  .section-chevron.open { transform:rotate(180deg); }
+
+  /* ── Table ── */
+  .proj-table { width:100%; border-collapse:collapse; }
+  .proj-table th { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); padding:10px 16px; text-align:left; background:#f9fafb; border-bottom:1px solid var(--border); }
+  .proj-table td { padding:14px 16px; border-bottom:1px solid var(--border); vertical-align:top; }
+  .proj-table tr:last-child td { border-bottom:none; }
+  .proj-table tr:hover td { background:#fafafa; }
+  .proj-title { font-weight:600; font-size:14px; display:block; }
+  .proj-title:hover { color:var(--blue); }
+  .proj-desc { font-size:12px; color:var(--text-muted); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:380px; }
+
+  /* ── Status badges ── */
+  .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
+  .s-not-started { background:#f3f4f6; color:#6b7280; }
+  .s-in-progress { background:#dbeafe; color:#2563eb; }
+  .s-blocked     { background:#fee2e2; color:#dc2626; }
+  .s-done        { background:#d1fae5; color:#059669; }
+  .s-comm        { background:var(--amber-light); color:var(--amber); font-size:10px; padding:2px 6px; border-radius:10px; margin-left:4px; }
+
+  /* ── Priority dots ── */
+  .dots { display:flex; gap:3px; align-items:center; }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--border); }
+  .dot.on { background:var(--amber); }
+
+  /* ── Actions ── */
+  .actions { display:flex; gap:6px; flex-wrap:wrap; }
+  .btn { border:none; border-radius:6px; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; transition:.15s; white-space:nowrap; }
+  .btn:disabled { opacity:.5; cursor:default; }
+  .btn-primary  { background:var(--blue); color:#fff; }
+  .btn-primary:hover { background:#2563eb; }
+  .btn-green    { background:var(--green); color:#fff; }
+  .btn-green:hover { background:#059669; }
+  .btn-amber    { background:var(--amber); color:#fff; }
+  .btn-amber:hover { background:#d97706; }
+  .btn-outline  { background:#fff; color:var(--text); border:1px solid var(--border); }
+  .btn-outline:hover { background:#f9fafb; }
+  .btn-danger   { background:#fff; color:var(--red); border:1px solid #fca5a5; }
+  .btn-danger:hover { background:var(--red-light); }
+  .btn-lg { padding:10px 20px; font-size:14px; }
+  .btn-sm { padding:4px 10px; font-size:11px; }
+
+  /* ── Assignee ── */
+  .assignee { font-size:11px; font-weight:600; background:#f3f4f6; border-radius:20px; padding:2px 8px; display:inline-block; }
+
+  /* ── Add button row ── */
+  .add-row { padding:12px 20px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; }
+
+  /* ── Modal ── */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:#fff; border-radius:12px; padding:28px; width:520px; max-width:95vw; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.15); }
+  .modal h2 { font-size:18px; font-weight:700; margin-bottom:20px; }
+  .modal-field { margin-bottom:14px; }
+  .modal-field label { display:block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); margin-bottom:6px; }
+  .modal-field input, .modal-field select, .modal-field textarea { width:100%; border:1px solid var(--border); border-radius:6px; padding:9px 12px; font-size:14px; font-family:inherit; }
+  .modal-field textarea { height:80px; resize:vertical; }
+  .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:20px; }
+
+  /* ── Toast ── */
+  #toast { position:fixed; bottom:24px; right:24px; background:#1f2937; color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; font-weight:500; opacity:0; transition:opacity .2s; pointer-events:none; z-index:9999; }
+  #toast.show { opacity:1; }
+
+  /* ── Loading ── */
+  #loading { text-align:center; padding:60px; color:var(--text-muted); font-size:14px; }
+  .spinner { width:24px; height:24px; border:3px solid var(--border); border-top-color:var(--blue); border-radius:50%; animation:spin .7s linear infinite; margin:0 auto 12px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* ── Empty ── */
+  .empty-state { padding:32px; text-align:center; color:var(--text-muted); font-size:13px; }
+
+  /* ── Comm prompt box ── */
+  .prompt-box { background:#f8fafc; border:1px solid var(--border); border-radius:6px; padding:10px 14px; font-family:monospace; font-size:11px; white-space:pre-wrap; max-height:200px; overflow-y:auto; margin-top:8px; }
+
+  @media (max-width:768px) {
+    .proj-table th:nth-child(n+4), .proj-table td:nth-child(n+4) { display:none; }
+    .proj-desc { max-width:200px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Auth -->
+<div id="auth-screen" style="display:none">
+  <img src="https://portal.togohealth.com/TogoHealthLogo.png" style="width:48px;margin-bottom:12px">
+  <h2>SEGE Management Tracker</h2>
+  <p>Enter your GitHub Personal Access Token to load the tracker.<br>Token needs <strong>repo</strong> scope on togohealth-dev.</p>
+  <input id="pat-input" type="password" placeholder="ghp_…">
+  <button class="btn btn-primary btn-lg" onclick="startOAuth()" style="width:100%">Connect →</button>
+</div>
+
+<!-- Header -->
+<div class="header" id="app-header" style="display:none">
+  <div class="header-left">
+    <img src="https://portal.togohealth.com/TogoHealthLogo.png" class="header-logo">
+    <div>
+      <h1>SEGE Management Tracker</h1>
+      <div class="header-sub">Business · Facility · Provider — GitHub Issues as source of truth</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-outline btn-sm" onclick="loadAll()">↻ Refresh</button>
+    <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Add Project</button>
+    <a href="https://github.com/togohealth-dev/sege-tracker/issues" target="_blank" class="btn btn-outline btn-sm">GitHub ↗</a>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main" id="main-content" style="display:none">
+  <div id="loading"><div class="spinner"></div>Loading tracker…</div>
+  <div id="content" style="display:none">
+    <!-- Stats -->
+    <div class="stats" id="stats-row"></div>
+    <!-- Sections -->
+    <div id="section-business"></div>
+    <div id="section-facility"></div>
+    <div id="section-provider"></div>
+    <div id="section-done"></div>
+  </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal-overlay" id="add-modal" onclick="closeAddModal(event)">
+  <div class="modal">
+    <h2>Add Project</h2>
+    <div class="modal-field">
+      <label>Title</label>
+      <input type="text" id="add-title" placeholder="Short project name">
+    </div>
+    <div class="modal-field">
+      <label>Category</label>
+      <select id="add-category">
+        <option value="business">🔵 Business</option>
+        <option value="facility">🟢 Facility</option>
+        <option value="provider">🟣 Provider</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Priority</label>
+      <select id="add-priority">
+        <option value="5">★★★★★ Highest (5)</option>
+        <option value="4">★★★★☆ High (4)</option>
+        <option value="3" selected>★★★☆☆ Medium (3)</option>
+        <option value="2">★★☆☆☆ Low (2)</option>
+        <option value="1">★☆☆☆☆ Lowest (1)</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Assignee</label>
+      <select id="add-assignee">
+        <option value="">— Unassigned —</option>
+        <option value="gregbaird11">Greg</option>
+        <option value="riley870">Riley</option>
+        <option value="morgan477">Morgan</option>
+        <option value="Jordan-togoclaude">Jordan</option>
+        <option value="msdrigg">Scott</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Communication automation? <span style="font-weight:400;color:var(--text-muted)">(adds 📧 tag)</span></label>
+      <select id="add-comm">
+        <option value="">No</option>
+        <option value="communication">Yes — email outreach / escalation</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Notes / description</label>
+      <textarea id="add-notes" placeholder="Brief description or context…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeAddModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAdd()">Create →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="edit-modal" onclick="closeEditModal(event)">
+  <div class="modal">
+    <h2>Edit Project</h2>
+    <div class="modal-field">
+      <label>Title</label>
+      <input type="text" id="edit-title">
+    </div>
+    <div class="modal-field">
+      <label>Priority</label>
+      <select id="edit-priority">
+        <option value="5">★★★★★ Highest (5)</option>
+        <option value="4">★★★★☆ High (4)</option>
+        <option value="3">★★★☆☆ Medium (3)</option>
+        <option value="2">★★☆☆☆ Low (2)</option>
+        <option value="1">★☆☆☆☆ Lowest (1)</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Assignee</label>
+      <select id="edit-assignee">
+        <option value="">— Unassigned —</option>
+        <option value="gregbaird11">Greg</option>
+        <option value="riley870">Riley</option>
+        <option value="morgan477">Morgan</option>
+        <option value="Jordan-togoclaude">Jordan</option>
+        <option value="msdrigg">Scott</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Notes / description</label>
+      <textarea id="edit-notes"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const REPO = 'togohealth-dev/sege-tracker';
+const API  = 'https://api.github.com';
+const TEAM = { gregbaird11:'Greg', riley870:'Riley', morgan477:'Morgan', 'Jordan-togoclaude':'Jordan', msdrigg:'Scott' };
+
+let currentUser = null;
+let allIssues   = [];
+let editIssueNumber = null;
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+function getPAT() { return localStorage.getItem('sege-tracker-pat') || ''; }
+function setPAT(v) { localStorage.setItem('sege-tracker-pat', v); }
+
+function startOAuth() {
+  const pat = document.getElementById('pat-input').value.trim();
+  if (!pat) { toast('Enter a GitHub PAT first'); return; }
+  setPAT(pat);
+  init();
+}
+
+async function ghFetch(path, opts={}) {
+  const url = path.startsWith('http') ? path : `${API}${path}`;
+  const res = await fetch(url, { ...opts, headers: { Authorization:`Bearer ${getPAT()}`, Accept:'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28', ...(opts.headers||{}) } });
+  if (!res.ok) throw new Error(`GitHub ${res.status}: ${path}`);
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+async function init() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-header').style.display  = 'flex';
+  document.getElementById('main-content').style.display = 'block';
+  try {
+    currentUser = await ghFetch('/user');
+    await loadAll();
+  } catch(e) {
+    toast('Auth failed — check your PAT', true);
+    document.getElementById('auth-screen').style.display = 'block';
+    document.getElementById('app-header').style.display  = 'none';
+    document.getElementById('main-content').style.display = 'none';
+  }
+}
+
+window.addEventListener('load', () => {
+  if (getPAT()) init();
+  else document.getElementById('auth-screen').style.display = 'block';
+});
+
+// ── Data ─────────────────────────────────────────────────────────────────────
+
+function normalizeIssue(issue) {
+  const labels  = (issue.labels||[]).map(l=>l.name);
+  const assignees = (issue.assignees||[]).map(a=>a.login);
+  const priority = +(labels.find(l=>l.startsWith('priority-'))?.slice(9)||'3');
+  const category = ['business','facility','provider'].find(c=>labels.includes(c)) || 'facility';
+  const isComm   = labels.includes('communication');
+  const isDone   = issue.state==='closed' || labels.includes('status:done');
+  const status   = issue.state==='closed' ? 'done'
+    : labels.includes('status:done')        ? 'done'
+    : labels.includes('status:blocked')     ? 'blocked'
+    : labels.includes('status:in-progress') ? 'in-progress'
+    : 'not-started';
+  const bodyFirst = (issue.body||'').split('\n')[0].replace(/^#+\s*/,'').slice(0,120);
+  return { number:issue.number, title:issue.title, body:issue.body||'', bodyFirst, url:issue.html_url, labels, assignees, priority, category, isComm, status, isDone };
+}
+
+async function loadAll() {
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('content').style.display = 'none';
+  try {
+    const [open, closed] = await Promise.all([
+      ghFetch(`/repos/${REPO}/issues?state=open&per_page=100`),
+      ghFetch(`/repos/${REPO}/issues?state=closed&per_page=100`),
+    ]);
+    const seen = new Map();
+    for (const i of [...open,...closed]) if (!seen.has(i.number)) seen.set(i.number, i);
+    allIssues = [...seen.values()].map(normalizeIssue).sort((a,b)=>b.priority-a.priority||a.number-b.number);
+    renderStats();
+    renderSections();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+  } catch(e) {
+    document.getElementById('loading').style.display = 'none';
+    toast(`Error loading: ${e.message}`, true);
+  }
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+
+const CAT_LABEL = { business:'🔵 Business', facility:'🟢 Facility', provider:'🟣 Provider' };
+const CAT_BADGE = { business:'badge-business', facility:'badge-facility', provider:'badge-provider' };
+
+function renderStats() {
+  const active = allIssues.filter(i=>!i.isDone);
+  const done   = allIssues.filter(i=>i.isDone);
+  const bycat  = cat => active.filter(i=>i.category===cat).length;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card stat-blue"><div class="stat-label">Business</div><div class="stat-val">${bycat('business')}</div><div class="stat-sub">active projects</div></div>
+    <div class="stat-card stat-green"><div class="stat-label">Facility</div><div class="stat-val">${bycat('facility')}</div><div class="stat-sub">active projects</div></div>
+    <div class="stat-card stat-purple"><div class="stat-label">Provider</div><div class="stat-val">${bycat('provider')}</div><div class="stat-sub">active projects</div></div>
+    <div class="stat-card stat-amber"><div class="stat-label">Done</div><div class="stat-val">${done.length}</div><div class="stat-sub">completed</div></div>
+  `;
+}
+
+function statusBadge(s) {
+  return { 'not-started':'<span class="badge s-not-started">Not started</span>', 'in-progress':'<span class="badge s-in-progress">● In Progress</span>', 'blocked':'<span class="badge s-blocked">⚠ Blocked</span>', done:'<span class="badge s-done">✓ Done</span>' }[s] || '';
+}
+
+function dotsHtml(p) {
+  return `<div class="dots">${[1,2,3,4,5].map(n=>`<div class="dot${n<=p?' on':''}"></div>`).join('')}</div>`;
+}
+
+function teamName(login) { return TEAM[login]||login; }
+
+function assigneeHtml(assignees) {
+  if (!assignees?.length) return `<span style="color:var(--border);font-size:12px">—</span>`;
+  return assignees.map(a=>`<span class="assignee">${teamName(a)}</span>`).join(' ');
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function renderRow(p, idx) {
+  const commTag = p.isComm ? `<span class="s-comm">📧 Comm</span>` : '';
+  const actions = buildActions(p);
+  return `<tr id="row-${p.number}">
+    <td style="font-size:12px;font-weight:600;color:var(--text-muted)">${idx+1}</td>
+    <td>
+      <a class="proj-title" href="${p.url}" target="_blank">${esc(p.title)}</a>${commTag}
+      <div class="proj-desc">${esc(p.bodyFirst)}</div>
+    </td>
+    <td>${statusBadge(p.status)}</td>
+    <td>${dotsHtml(p.priority)}</td>
+    <td>${assigneeHtml(p.assignees)}</td>
+    <td><div class="actions">${actions}</div></td>
+  </tr>`;
+}
+
+function buildActions(p) {
+  const edit = `<button class="btn btn-outline btn-sm" onclick="openEditModal(${p.number})">Edit</button>`;
+  if (p.isDone) return `${edit}<button class="btn btn-outline btn-sm" onclick="reopen(${p.number})">↩ Reopen</button>`;
+  const claim = p.assignees.length ? '' : `<button class="btn btn-primary btn-sm" onclick="claim(${p.number})">Claim</button>`;
+  const block  = p.status==='blocked' ? '' : `<button class="btn btn-amber btn-sm" onclick="markBlocked(${p.number})">⚠ Blocked</button>`;
+  const done   = `<button class="btn btn-green btn-sm" onclick="markDone(${p.number})">✓ Done</button>`;
+  return [claim, edit, block, done].filter(Boolean).join('');
+}
+
+const TABLE_HEAD = `<thead><tr>
+  <th style="width:36px">#</th>
+  <th>Project</th>
+  <th style="width:130px">Status</th>
+  <th style="width:90px">Priority</th>
+  <th style="width:90px">Assignee</th>
+  <th style="width:220px">Actions</th>
+</tr></thead>`;
+
+function renderSection(elId, cat, issues) {
+  const el = document.getElementById(elId);
+  const active = issues.filter(i=>!i.isDone && i.category===cat);
+  const inProg = active.filter(i=>i.status==='in-progress').length;
+  const blocked = active.filter(i=>i.status==='blocked').length;
+  el.innerHTML = `
+  <div class="section">
+    <div class="section-header" onclick="toggleSection('${elId}')">
+      <div class="section-title">
+        <span>${CAT_LABEL[cat]}</span>
+        <span class="section-badge ${CAT_BADGE[cat]}">${active.length} projects</span>
+        ${blocked ? `<span class="section-badge" style="background:#fee2e2;color:#dc2626">${blocked} blocked</span>` : ''}
+      </div>
+      <div class="section-meta">
+        <span>${inProg} in progress</span>
+        <span class="section-chevron open" id="chev-${elId}">▼</span>
+      </div>
+    </div>
+    <div id="body-${elId}">
+      ${active.length ? `<table class="proj-table">${TABLE_HEAD}<tbody>${active.map((p,i)=>renderRow(p,i)).join('')}</tbody></table>` : `<div class="empty-state">No ${cat} projects yet. <button class="btn btn-primary btn-sm" onclick="openAddModal('${cat}')" style="margin-left:8px">+ Add one</button></div>`}
+      <div class="add-row"><button class="btn btn-outline btn-sm" onclick="openAddModal('${cat}')">+ Add ${cat} project</button></div>
+    </div>
+  </div>`;
+}
+
+function renderDoneSection(issues) {
+  const done = issues.filter(i=>i.isDone);
+  const el = document.getElementById('section-done');
+  if (!done.length) { el.innerHTML=''; return; }
+  el.innerHTML = `
+  <div class="section">
+    <div class="section-header" onclick="toggleSection('section-done')">
+      <div class="section-title"><span>✓ Done</span><span class="section-badge badge-done">${done.length} completed</span></div>
+      <div class="section-meta"><span class="section-chevron" id="chev-section-done">▼</span></div>
+    </div>
+    <div id="body-section-done" style="display:none">
+      <table class="proj-table">${TABLE_HEAD}<tbody>${done.map((p,i)=>renderRow(p,i)).join('')}</tbody></table>
+    </div>
+  </div>`;
+}
+
+function renderSections() {
+  renderSection('section-business', 'business', allIssues);
+  renderSection('section-facility', 'facility', allIssues);
+  renderSection('section-provider', 'provider', allIssues);
+  renderDoneSection(allIssues);
+}
+
+function toggleSection(id) {
+  const body = document.getElementById(`body-${id}`);
+  const chev = document.getElementById(`chev-${id}`);
+  const hidden = body.style.display === 'none';
+  body.style.display = hidden ? '' : 'none';
+  if (chev) chev.classList.toggle('open', hidden);
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+
+async function withLoading(n, fn) {
+  const btns = document.querySelectorAll(`#row-${n} button`);
+  btns.forEach(b=>b.disabled=true);
+  try { await fn(); await loadAll(); }
+  catch(e) { toast(`Error: ${e.message}`, true); btns.forEach(b=>b.disabled=false); }
+}
+
+async function addLabel(n, label) {
+  await ghFetch(`/repos/${REPO}/issues/${n}/labels`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({labels:[label]}) });
+}
+async function removeLabel(n, label) {
+  await ghFetch(`/repos/${REPO}/issues/${n}/labels/${encodeURIComponent(label)}`, { method:'DELETE' }).catch(()=>{});
+}
+async function postComment(n, body) {
+  await ghFetch(`/repos/${REPO}/issues/${n}/comments`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({body}) });
+}
+
+function claim(n) {
+  withLoading(n, async()=>{
+    await ghFetch(`/repos/${REPO}/issues/${n}`, {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({assignees:[currentUser.login]})});
+    await addLabel(n,'status:in-progress');
+    await removeLabel(n,'status:not-started');
+    toast(`Claimed #${n}`);
+  });
+}
+
+function markBlocked(n) {
+  withLoading(n, async()=>{
+    await addLabel(n,'status:blocked');
+    await removeLabel(n,'status:in-progress');
+    await postComment(n,`⚠️ **Blocked** by @${currentUser.login}`);
+    toast(`Marked blocked`);
+  });
+}
+
+function markDone(n) {
+  if (!confirm('Mark this project done and close the issue?')) return;
+  withLoading(n, async()=>{
+    await addLabel(n,'status:done');
+    await ghFetch(`/repos/${REPO}/issues/${n}`, {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:'closed'})});
+    toast(`#${n} marked done ✓`);
+  });
+}
+
+function reopen(n) {
+  withLoading(n, async()=>{
+    await ghFetch(`/repos/${REPO}/issues/${n}`, {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:'open'})});
+    await removeLabel(n,'status:done');
+    await addLabel(n,'status:in-progress');
+    toast(`#${n} reopened`);
+  });
+}
+
+// ── Add Modal ─────────────────────────────────────────────────────────────────
+
+function openAddModal(cat) {
+  if (cat) document.getElementById('add-category').value = cat;
+  document.getElementById('add-modal').classList.add('open');
+  document.getElementById('add-title').focus();
+}
+function closeAddModal(e) {
+  if (e && e.target !== document.getElementById('add-modal')) return;
+  document.getElementById('add-modal').classList.remove('open');
+}
+
+async function saveAdd() {
+  const title    = document.getElementById('add-title').value.trim();
+  const cat      = document.getElementById('add-category').value;
+  const prio     = document.getElementById('add-priority').value;
+  const assignee = document.getElementById('add-assignee').value;
+  const comm     = document.getElementById('add-comm').value;
+  const notes    = document.getElementById('add-notes').value.trim();
+  if (!title) { toast('Title is required'); return; }
+  const btn = document.querySelector('#add-modal .btn-primary');
+  btn.textContent='Creating…'; btn.disabled=true;
+  try {
+    const labels = [cat, `priority-${prio}`, 'status:in-progress', ...(comm?[comm]:[])];
+    const body = notes || '';
+    const issue = await ghFetch(`/repos/${REPO}/issues`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ title, body, labels, assignees: assignee?[assignee]:[] }) });
+    document.getElementById('add-modal').classList.remove('open');
+    document.getElementById('add-title').value='';
+    document.getElementById('add-notes').value='';
+    toast(`Created #${issue.number}`);
+    await loadAll();
+  } finally { btn.textContent='Create →'; btn.disabled=false; }
+}
+
+// ── Edit Modal ────────────────────────────────────────────────────────────────
+
+function openEditModal(n) {
+  const p = allIssues.find(p=>p.number===n);
+  if (!p) return;
+  editIssueNumber = n;
+  document.getElementById('edit-title').value = p.title;
+  const prio = p.labels.find(l=>l.startsWith('priority-'))?.slice(9)||'3';
+  document.getElementById('edit-priority').value = prio;
+  document.getElementById('edit-assignee').value = p.assignees?.[0]||'';
+  document.getElementById('edit-notes').value = p.body.split('\n').slice(0,3).join('\n');
+  document.getElementById('edit-modal').classList.add('open');
+}
+function closeEditModal(e) {
+  if (e && e.target !== document.getElementById('edit-modal')) return;
+  document.getElementById('edit-modal').classList.remove('open');
+  editIssueNumber = null;
+}
+
+async function saveEdit() {
+  const n = editIssueNumber; if (!n) return;
+  const title    = document.getElementById('edit-title').value.trim();
+  const prio     = document.getElementById('edit-priority').value;
+  const assignee = document.getElementById('edit-assignee').value;
+  const notes    = document.getElementById('edit-notes').value.trim();
+  if (!title) { toast('Title required'); return; }
+  const btn = document.querySelector('#edit-modal .btn-primary');
+  btn.textContent='Saving…'; btn.disabled=true;
+  try {
+    const issue = await ghFetch(`/repos/${REPO}/issues/${n}`);
+    const body = notes || issue.body || '';
+    await ghFetch(`/repos/${REPO}/issues/${n}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ title, assignees: assignee?[assignee]:[], body }) });
+    for (let i=1;i<=5;i++) await removeLabel(n,`priority-${i}`);
+    if (prio) await addLabel(n,`priority-${prio}`);
+    document.getElementById('edit-modal').classList.remove('open');
+    editIssueNumber=null;
+    toast(`#${n} updated`);
+    await loadAll();
+  } finally { btn.textContent='Save'; btn.disabled=false; }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+
+let toastTimer;
+function toast(msg, err=false) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.style.background=err?'#dc2626':'#1f2937';
+  el.classList.add('show'); clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>
