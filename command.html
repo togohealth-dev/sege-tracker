@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SEGE Command Center</title>
+<link rel="icon" href="https://portal.togohealth.com/TogoHealthLogo.png">
+<style>
+  :root{
+    --ground:#f6f8fa; --surface:#fff; --surface-2:#eef2f7; --border:#e2e7ee;
+    --ink:#17212f; --muted:#5c6875; --faint:#8a97a6;
+    --accent:#0e7c86; --accent-soft:#d9eef0; --accent-ink:#0a5a62;
+    --ok:#1f9d5b; --ok-bg:#e4f5ec; --warn:#c07708; --warn-bg:#faefdc;
+    --bad:#d1453b; --bad-bg:#fbe4e2; --idle:#8a97a6; --idle-bg:#eceff3;
+    --shadow:0 1px 2px rgba(20,30,45,.06),0 4px 14px rgba(20,30,45,.05);
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --ground:#0e1319; --surface:#161d27; --surface-2:#1e2833; --border:#28323f;
+    --ink:#e8edf4; --muted:#93a2b3; --faint:#6b7888;
+    --accent:#26b3bd; --accent-soft:#123037; --accent-ink:#7fd8de;
+    --ok:#39c07d; --ok-bg:#12291f; --warn:#e0a13a; --warn-bg:#2c2413;
+    --bad:#e5695f; --bad-bg:#2e1a19; --idle:#6b7888; --idle-bg:#1c242e;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.28);
+  }}
+  :root[data-theme="light"]{--ground:#f6f8fa;--surface:#fff;--surface-2:#eef2f7;--border:#e2e7ee;--ink:#17212f;--muted:#5c6875;--faint:#8a97a6;--accent:#0e7c86;--accent-soft:#d9eef0;--ok:#1f9d5b;--ok-bg:#e4f5ec;--warn:#c07708;--warn-bg:#faefdc;--bad:#d1453b;--bad-bg:#fbe4e2;--idle:#8a97a6;--idle-bg:#eceff3;--shadow:0 1px 2px rgba(20,30,45,.06),0 4px 14px rgba(20,30,45,.05);}
+  :root[data-theme="dark"]{--ground:#0e1319;--surface:#161d27;--surface-2:#1e2833;--border:#28323f;--ink:#e8edf4;--muted:#93a2b3;--faint:#6b7888;--accent:#26b3bd;--accent-soft:#123037;--ok:#39c07d;--ok-bg:#12291f;--warn:#e0a13a;--warn-bg:#2c2413;--bad:#e5695f;--bad-bg:#2e1a19;--idle:#6b7888;--idle-bg:#1c242e;--shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.28);}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--ground);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.5}
+  .tnum{font-variant-numeric:tabular-nums}
+  .wrap{max-width:1140px;margin:0 auto;padding:18px 16px 60px}
+  header.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:16px}
+  .logo{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-ink));display:grid;place-items:center;color:#fff;font-size:19px}
+  .title h1{font-size:20px;font-weight:750;letter-spacing:-.02em}
+  .title p{color:var(--muted);font-size:12px}
+  .top .right{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .btn{border:1px solid var(--border);background:var(--surface);color:var(--ink);font:inherit;font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer}
+  .btn:hover{border-color:var(--accent)}
+  .btn.pri{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .conn{font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:999px}
+  .conn.on{background:var(--ok-bg);color:var(--ok)} .conn.off{background:var(--warn-bg);color:var(--warn)}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+  @media(max-width:720px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
+  .kpi .n{font-size:25px;font-weight:750} .kpi .l{font-size:11.5px;color:var(--muted)}
+  .kpi.bad .n{color:var(--bad)} .kpi.ok .n{color:var(--ok)} .kpi.warn .n{color:var(--warn)}
+  nav.tabs{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:11px;margin-bottom:16px;overflow-x:auto;border:1px solid var(--border)}
+  nav.tabs button{flex:1;min-width:max-content;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;font-size:13px;padding:8px 13px;border-radius:8px;cursor:pointer}
+  nav.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+  .panel{display:none} .panel.on{display:block}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+  .card h3{padding:12px 16px;font-size:13px;font-weight:700;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center}
+  .card h3 .count{margin-left:auto;color:var(--muted);font-weight:600;font-size:12px}
+  .sect{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:20px 2px 8px}
+  .row{display:flex;align-items:center;gap:11px;padding:11px 16px;border-bottom:1px solid var(--border)}
+  .row:last-child{border-bottom:0} .row .main{flex:1;min-width:0}
+  .row .name{font-weight:600} .row .sub{color:var(--muted);font-size:12px;margin-top:1px}
+  a.name{color:inherit;text-decoration:none} a.name:hover{color:var(--accent)}
+  .pill{font-size:11px;font-weight:650;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .p-ok{background:var(--ok-bg);color:var(--ok)} .p-warn{background:var(--warn-bg);color:var(--warn)}
+  .p-bad{background:var(--bad-bg);color:var(--bad)} .p-idle{background:var(--idle-bg);color:var(--faint)}
+  .p-prog{background:var(--accent-soft);color:var(--accent-ink)}
+  .dots{display:flex;gap:3px} .d{width:7px;height:7px;border-radius:50%;background:var(--border)} .d.on{background:var(--warn)}
+  .acts{display:flex;gap:6px;flex-wrap:wrap}
+  .mini{border:1px solid var(--border);background:var(--surface);color:var(--ink);font:inherit;font-size:11px;font-weight:600;padding:4px 9px;border-radius:6px;cursor:pointer}
+  .mini:hover{border-color:var(--accent)} .mini.g{background:var(--ok);color:#fff;border-color:var(--ok)} .mini.a{background:var(--warn);color:#fff;border-color:var(--warn)}
+  .mini:disabled{opacity:.5;cursor:default}
+  .people{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+  .pcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow)}
+  .phead{display:flex;align-items:center;gap:11px;padding:12px 15px}
+  .avatar{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;color:#fff;font-weight:700}
+  .who{font-weight:700} .role{font-size:12px;color:var(--muted)}
+  .pstat{margin-left:auto;text-align:right} .pstat b{font-size:19px;font-weight:750} .pstat span{display:block;font-size:10.5px;color:var(--muted)}
+  .pi{display:flex;gap:8px;align-items:flex-start;padding:8px 15px;border-top:1px solid var(--border);font-size:12.5px}
+  .pi .t{flex:1;min-width:0} .pi .t small{color:var(--muted);display:block}
+  .note{background:var(--warn-bg);color:var(--warn);padding:9px 13px;border-radius:9px;font-size:12px;margin-bottom:14px}
+  .msg{padding:50px;text-align:center;color:var(--muted)}
+  .modal{position:fixed;inset:0;background:rgba(10,15,25,.5);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .modal.on{display:flex}
+  .box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;width:460px;max-width:100%}
+  .box h2{font-size:17px;margin-bottom:6px} .box p{color:var(--muted);font-size:13px;margin-bottom:14px}
+  .box input,.box select,.box textarea{width:100%;border:1px solid var(--border);background:var(--ground);color:var(--ink);border-radius:7px;padding:9px 11px;font:inherit;margin-bottom:10px}
+  .box label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:block;margin-bottom:4px}
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:10px 18px;border-radius:9px;font-size:13px;font-weight:600;opacity:0;transition:.2s;pointer-events:none;z-index:99}
+  #toast.show{opacity:1}
+  .foot{margin-top:24px;color:var(--faint);font-size:12px;text-align:center;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="logo">🧭</div>
+    <div class="title"><h1>SEGE Command Center</h1><p>Who's doing what — live over your GitHub project tracker</p></div>
+    <div class="right">
+      <span id="conn" class="conn off">● View only</span>
+      <button class="btn" onclick="loadAll()">↻ Refresh</button>
+      <button class="btn" id="connectBtn" onclick="openConnect()">Connect to edit</button>
+      <button class="btn pri" onclick="openAdd()">+ Add</button>
+      <a class="btn" href="./index.html">Classic board</a>
+    </div>
+  </header>
+
+  <div class="kpis" id="kpis"></div>
+  <nav class="tabs" id="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-t="overview">Overview</button>
+    <button role="tab" aria-selected="false" data-t="people">People</button>
+    <button role="tab" aria-selected="false" data-t="facility">Facility</button>
+    <button role="tab" aria-selected="false" data-t="provider">Provider</button>
+    <button role="tab" aria-selected="false" data-t="business">Business</button>
+    <button role="tab" aria-selected="false" data-t="followups">Follow-ups</button>
+    <button role="tab" aria-selected="false" data-t="done">Done</button>
+  </nav>
+  <div id="view"><div class="msg">Loading live projects…</div></div>
+  <div class="foot">Live data from <b>togohealth-dev/sege-tracker</b> GitHub Issues · shared with everyone ·
+    edits require a GitHub token (repo scope). Marking done here updates the classic board too.</div>
+</div>
+
+<!-- Connect modal -->
+<div class="modal" id="connect"><div class="box">
+  <h2>Connect to edit</h2>
+  <p>Paste a GitHub personal access token with <b>repo</b> scope on togohealth-dev. It's stored only in this browser (same token the classic board uses). Without it you can still view everything.</p>
+  <input id="pat" type="password" placeholder="ghp_… or github_pat_…">
+  <div class="acts" style="justify-content:flex-end">
+    <button class="btn" onclick="closeConnect()">Cancel</button>
+    <button class="btn pri" onclick="saveConnect()">Connect</button>
+  </div>
+</div></div>
+
+<!-- Add modal -->
+<div class="modal" id="add"><div class="box">
+  <h2>Add project / task</h2>
+  <label>Title</label><input id="a_title" placeholder="Short name">
+  <label>Category</label><select id="a_cat"><option value="facility">🟢 Facility</option><option value="provider">🟣 Provider</option><option value="business">🔵 Business</option></select>
+  <label>Owner</label><select id="a_who"></select>
+  <label>Priority</label><select id="a_prio"><option value="5">★★★★★</option><option value="4">★★★★</option><option value="3" selected>★★★</option><option value="2">★★</option><option value="1">★</option></select>
+  <label>Notes</label><textarea id="a_notes" rows="3" placeholder="Optional context"></textarea>
+  <div class="acts" style="justify-content:flex-end">
+    <button class="btn" onclick="closeAdd()">Cancel</button>
+    <button class="btn pri" onclick="saveAdd()">Create</button>
+  </div>
+</div></div>
+
+<div id="toast"></div>
+
+<script>
+const REPO='togohealth-dev/sege-tracker', API='https://api.github.com';
+// GitHub-assignable team (issue assignees must be GitHub users)
+const TEAM={
+  gregbaird11:{name:'Greg Baird',role:'Owner · Togo Health',c:'#c0603a'},
+  riley870:{name:'Riley Moore',role:'COO · SEGE',c:'#c07708'},
+  morgan477:{name:'Morgan Rawlings',role:'CCO · SEGE',c:'#2f8f4e'},
+  'Jordan-togoclaude':{name:'Jordan Anderson',role:'COO · Togo Health',c:'#7a5cc0'},
+  msdrigg:{name:'Scott',role:'Engineering',c:'#3f6fb0'},
+};
+let issues=[], me=null;
+const $=(s,r=document)=>r.querySelector(s);
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const pat=()=>localStorage.getItem('sege-tracker-pat')||'';
+
+async function gh(path,opts={}){
+  const h={Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',...(opts.headers||{})};
+  if(pat()) h.Authorization='Bearer '+pat();
+  const res=await fetch(path.startsWith('http')?path:API+path,{...opts,headers:h});
+  if(!res.ok) throw new Error('GitHub '+res.status);
+  return res.status===204?null:res.json();
+}
+function requireAuth(){ if(!pat()){ openConnect(); toast('Connect a token to make changes'); return false;} return true; }
+
+function normalize(i){
+  const labels=(i.labels||[]).map(l=>l.name);
+  const cat=['business','facility','provider'].find(c=>labels.includes(c))||'facility';
+  const prio=+((labels.find(l=>l.startsWith('priority-'))||'priority-3').slice(9));
+  const done=i.state==='closed'||labels.includes('status:done');
+  const status=done?'done':labels.includes('status:blocked')?'blocked':labels.includes('status:in-progress')?'in-progress':'not-started';
+  return {n:i.number,title:i.title,url:i.html_url,labels,cat,prio,done,status,
+    who:(i.assignees||[]).map(a=>a.login),comm:labels.includes('communication')};
+}
+async function loadAll(){
+  $('#view').innerHTML='<div class="msg">Loading live projects…</div>';
+  try{
+    if(pat()&&!me){ try{me=await gh('/user');}catch(e){} }
+    const [op,cl]=await Promise.all([
+      gh(`/repos/${REPO}/issues?state=open&per_page=100`),
+      gh(`/repos/${REPO}/issues?state=closed&per_page=100`)]);
+    const seen=new Map(); for(const i of [...op,...cl]) if(!seen.has(i.number)) seen.set(i.number,i);
+    issues=[...seen.values()].map(normalize).sort((a,b)=>b.prio-a.prio||a.n-b.n);
+    setConn(); renderKpis(); render(current);
+  }catch(e){ $('#view').innerHTML='<div class="msg">Couldn\'t load issues ('+e.message+'). If the repo is rate-limited, connect a token.</div>'; }
+}
+function setConn(){
+  const c=$('#conn'), b=$('#connectBtn');
+  if(pat()){ c.className='conn on'; c.textContent='● '+(me?me.login:'connected')+' · can edit'; b.textContent='Disconnect'; b.onclick=disconnect; }
+  else{ c.className='conn off'; c.textContent='● View only'; b.textContent='Connect to edit'; b.onclick=openConnect; }
+}
+function disconnect(){ localStorage.removeItem('sege-tracker-pat'); me=null; setConn(); toast('Disconnected'); }
+
+const active=()=>issues.filter(i=>!i.done);
+function renderKpis(){
+  const a=active(), byc=c=>a.filter(i=>i.cat===c).length;
+  const blocked=a.filter(i=>i.status==='blocked').length;
+  const prog=a.filter(i=>i.status==='in-progress').length;
+  const k=[['facility '+'','Facility',byc('facility'),''],['','Provider',byc('provider'),''],
+    ['','Business',byc('business'),''],['warn','In progress',prog,''],['bad','Blocked',blocked,'']];
+  $('#kpis').innerHTML=k.map(x=>`<div class="kpi ${x[0]}"><div class="n tnum">${x[2]}</div><div class="l">${x[1]}</div></div>`).join('');
+}
+
+const statusPill=s=>({'not-started':['p-idle','Not started'],'in-progress':['p-prog','● In progress'],'blocked':['p-bad','⚠ Blocked'],'done':['p-ok','✓ Done']}[s]);
+const dots=p=>`<div class="dots">${[1,2,3,4,5].map(n=>`<span class="d${n<=p?' on':''}"></span>`).join('')}</div>`;
+const nm=l=>TEAM[l]?TEAM[l].name:l;
+
+function issueRow(i){
+  const [pc,pl]=statusPill(i.status);
+  const who=i.who.length?i.who.map(w=>`<span class="pill p-idle">${esc(nm(w))}</span>`).join(' '):'<span class="sub">—</span>';
+  const acts=i.done
+    ? `<button class="mini" onclick="reopen(${i.n})">↩ Reopen</button>`
+    : `${i.who.length?'':`<button class="mini" onclick="claim(${i.n})">Claim</button>`}
+       ${i.status==='blocked'?'':`<button class="mini a" onclick="block(${i.n})">⚠</button>`}
+       <button class="mini g" onclick="done(${i.n})">✓ Done</button>`;
+  return `<div class="row" id="r${i.n}">
+    <div class="main"><a class="name" href="${i.url}" target="_blank">${esc(i.title)}</a>${i.comm?' <span class="pill p-warn">📧</span>':''}
+      <div class="sub">#${i.n} · ${who}</div></div>
+    <span class="pill ${pc}">${pl}</span>${dots(i.prio)}
+    <div class="acts">${acts}</div></div>`;
+}
+function catCard(cat,label){
+  const list=issues.filter(i=>i.cat===cat&&!i.done);
+  const c=el('div','card'); c.appendChild(el('h3',null,`${label} <span class="count">${list.length} active</span>`));
+  if(list.length) list.forEach(i=>c.insertAdjacentHTML('beforeend',issueRow(i)));
+  else c.appendChild(el('div','msg','Nothing active here.'));
+  return c;
+}
+
+const views={
+  overview(){
+    const v=el('div');
+    const a=active();
+    const attn=a.filter(i=>i.status==='blocked').concat(a.filter(i=>i.status!=='blocked'&&i.prio>=5&&i.status==='not-started'));
+    const c=el('div','card'); c.appendChild(el('h3',null,`⚠️ Needs attention <span class="count">${attn.length}</span>`));
+    if(attn.length) attn.forEach(i=>c.insertAdjacentHTML('beforeend',
+      `<div class="row"><div class="main"><div class="name">${esc(i.title)}</div><div class="sub">#${i.n} · ${i.status==='blocked'?'blocked':'top priority, not started'}</div></div><span class="pill ${statusPill(i.status)[0]}">${statusPill(i.status)[1]}</span></div>`));
+    else c.appendChild(el('div','msg','Nothing blocked or urgent. 🎉'));
+    v.appendChild(c);
+    v.appendChild(el('div','sect','In progress now'));
+    const p=el('div','card'); const ip=a.filter(i=>i.status==='in-progress');
+    if(ip.length) ip.forEach(i=>p.insertAdjacentHTML('beforeend',issueRow(i))); else p.appendChild(el('div','msg','Nothing in progress.'));
+    v.appendChild(p);
+    return v;
+  },
+  people(){
+    const v=el('div');
+    v.appendChild(el('div','note','Owners with a GitHub login show here. Ed, Sam, Eric, Robin & Grace aren\'t GitHub users yet — next step is owner tags so every teammate can be assigned.'));
+    const wrap=el('div','people');
+    const buckets=Object.keys(TEAM).map(l=>({l,items:active().filter(i=>i.who.includes(l))}));
+    buckets.push({l:null,items:active().filter(i=>!i.who.length)});
+    buckets.forEach(b=>{
+      const t=b.l?TEAM[b.l]:{name:'Unassigned',role:'Needs an owner',c:'#8a97a6'};
+      const card=el('div','pcard');
+      card.appendChild(el('div','phead',`<div class="avatar" style="background:${t.c}">${t.name.split(' ').map(w=>w[0]).slice(0,2).join('')}</div>
+        <div><div class="who">${t.name}</div><div class="role">${t.role}</div></div>
+        <div class="pstat"><b class="tnum">${b.items.length}</b><span>active</span></div>`));
+      b.items.slice(0,8).forEach(i=>{const[pc,pl]=statusPill(i.status);
+        card.insertAdjacentHTML('beforeend',`<div class="pi"><div class="t"><b><a class="name" href="${i.url}" target="_blank">${esc(i.title)}</a></b><small>#${i.n} · ${i.cat}</small></div><span class="pill ${pc}">${pl}</span></div>`);});
+      if(!b.items.length) card.insertAdjacentHTML('beforeend','<div class="pi"><div class="t sub">No active items</div></div>');
+      wrap.appendChild(card);
+    });
+    v.appendChild(wrap); return v;
+  },
+  facility(){const v=el('div');v.appendChild(catCard('facility','🟢 Facility projects'));return v;},
+  provider(){const v=el('div');v.appendChild(catCard('provider','🟣 Provider projects'));return v;},
+  business(){const v=el('div');v.appendChild(catCard('business','🔵 Business projects'));return v;},
+  followups(){const v=el('div');v.appendChild(el('div','card',
+    `<h3>⏳ Email follow-ups</h3><div class="msg" style="text-align:left;padding:18px 16px">
+     This pulls from each teammate's <b>Ops Assistant</b> (the Gmail + Google Tasks nagger already live in your Workspace):
+     emails awaiting a reply and unanswered inbox mail. Wiring the two together is the next build —
+     for now each person gets their own daily escalating digest by email.</div>`));return v;},
+  done(){const v=el('div');const d=issues.filter(i=>i.done);
+    const c=el('div','card');c.appendChild(el('h3',null,`✓ Done <span class="count">${d.length}</span>`));
+    if(d.length)d.forEach(i=>c.insertAdjacentHTML('beforeend',issueRow(i)));else c.appendChild(el('div','msg','Nothing completed yet.'));
+    v.appendChild(c);return v;},
+};
+let current='overview';
+function render(t){current=t;const v=$('#view');v.innerHTML='';v.appendChild(views[t]());}
+
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  render(b.dataset.t);});
+
+// ── write actions (need token) ──
+async function addLabel(n,l){await gh(`/repos/${REPO}/issues/${n}/labels`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({labels:[l]})});}
+async function rmLabel(n,l){await gh(`/repos/${REPO}/issues/${n}/labels/${encodeURIComponent(l)}`,{method:'DELETE'}).catch(()=>{});}
+async function busy(n,fn){const btns=document.querySelectorAll('#r'+n+' button');btns.forEach(b=>b.disabled=true);
+  try{await fn();await loadAll();}catch(e){toast('Error: '+e.message);btns.forEach(b=>b.disabled=false);}}
+function claim(n){if(!requireAuth())return;busy(n,async()=>{await gh(`/repos/${REPO}/issues/${n}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({assignees:[me.login]})});await addLabel(n,'status:in-progress');await rmLabel(n,'status:not-started');toast('Claimed #'+n);});}
+function block(n){if(!requireAuth())return;busy(n,async()=>{await addLabel(n,'status:blocked');await rmLabel(n,'status:in-progress');toast('Marked blocked');});}
+function done(n){if(!requireAuth())return;if(!confirm('Mark #'+n+' done?'))return;busy(n,async()=>{await addLabel(n,'status:done');await gh(`/repos/${REPO}/issues/${n}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({state:'closed'})});toast('#'+n+' done ✓');});}
+function reopen(n){if(!requireAuth())return;busy(n,async()=>{await gh(`/repos/${REPO}/issues/${n}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({state:'open'})});await rmLabel(n,'status:done');await addLabel(n,'status:in-progress');toast('#'+n+' reopened');});}
+
+// modals
+function openConnect(){$('#connect').classList.add('on');$('#pat').focus();}
+function closeConnect(){$('#connect').classList.remove('on');}
+async function saveConnect(){const v=$('#pat').value.trim();if(!v){toast('Paste a token');return;}localStorage.setItem('sege-tracker-pat',v);me=null;closeConnect();try{me=await gh('/user');}catch(e){}setConn();toast('Connected');loadAll();}
+function openAdd(){if(!requireAuth())return;const s=$('#a_who');s.innerHTML='<option value="">— Unassigned —</option>'+Object.keys(TEAM).map(l=>`<option value="${l}">${TEAM[l].name}</option>`).join('');$('#add').classList.add('on');$('#a_title').focus();}
+function closeAdd(){$('#add').classList.remove('on');}
+async function saveAdd(){const title=$('#a_title').value.trim();if(!title){toast('Title required');return;}
+  const cat=$('#a_cat').value,prio=$('#a_prio').value,who=$('#a_who').value,notes=$('#a_notes').value.trim();
+  try{const iss=await gh(`/repos/${REPO}/issues`,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({title,body:notes,labels:[cat,'priority-'+prio,'status:'+(who?'in-progress':'not-started')],assignees:who?[who]:[]})});
+    closeAdd();$('#a_title').value='';$('#a_notes').value='';toast('Created #'+iss.number);loadAll();
+  }catch(e){toast('Error: '+e.message);}}
+
+let tt;function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('show'),2600);}
+setConn();loadAll();
+</script>
+</body>
+</html>
